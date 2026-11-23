@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import TraceCore
 
 @MainActor
@@ -28,6 +29,9 @@ public struct NetworkDiagnosticsView: View {
     @State private var filter: RequestFilter = .all
     @State private var showsSettings = false
     @State private var confirmsClear = false
+    @State private var exportDocument: ExportDocument?
+    @State private var showsExporter = false
+    @State private var exportError: String?
     public init(store: DiagnosticsStore) { _model = StateObject(wrappedValue: PanelModel(store: store)) }
 
     private enum RequestFilter: String, CaseIterable { case all = "All", failures = "Failures", slow = "Slow" }
@@ -72,6 +76,16 @@ public struct NetworkDiagnosticsView: View {
                         model.store.setPaused(!model.isPaused); model.refresh()
                     } label: { Image(systemName: model.isPaused ? "play.fill" : "pause.fill") }
                         .accessibilityLabel(model.isPaused ? TraceLocalization.text("Resume recording") : TraceLocalization.text("Pause recording"))
+                    Button {
+                        model.refresh()
+                        let records = filtered
+                        guard !records.isEmpty else { return }
+                        exportDocument = ExportDocument(records: records)
+                        showsExporter = true
+                    } label: {
+                        Label(TraceLocalization.text("Export filtered requests"), systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(filtered.isEmpty)
                     Button { confirmsClear = true } label: { Image(systemName: "trash") }
                         .disabled(model.records.isEmpty)
                         .accessibilityLabel(TraceLocalization.text("Clear all records"))
@@ -86,6 +100,19 @@ public struct NetworkDiagnosticsView: View {
             }
             .sheet(isPresented: $showsSettings) { SettingsView(store: model.store) }
         }
+        .fileExporter(isPresented: $showsExporter, document: exportDocument, contentType: .json,
+                      defaultFilename: "Trace-requests") { result in
+            if case let .failure(error) = result, (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+        .onChange(of: showsExporter) { presented in
+            if !presented { exportDocument = nil }
+        }
+        .alert(TraceLocalization.text("Export failed"), isPresented: Binding(
+            get: { exportError != nil }, set: { if !$0 { exportError = nil } }
+        )) { Button(TraceLocalization.text("Done")) { exportError = nil } }
+        message: { Text(exportError ?? "") }
         .task { await model.observe() }
     }
 }

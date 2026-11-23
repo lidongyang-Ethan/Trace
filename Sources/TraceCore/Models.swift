@@ -41,8 +41,8 @@ public enum RequestOutcome: String, Sendable, Codable {
     public var isFailure: Bool { [.httpError, .decodingError, .networkError].contains(self) }
 }
 
-public struct CapturedBody: Sendable, Equatable {
-    public enum State: String, Sendable { case json, absent, disabled, omitted, evicted }
+public struct CapturedBody: Sendable, Equatable, Encodable {
+    public enum State: String, Sendable, Encodable { case json, absent, disabled, omitted, evicted }
     public let state: State
     public let text: String?
     public let originalByteCount: Int?
@@ -62,7 +62,7 @@ public struct CapturedBody: Sendable, Equatable {
     }
 }
 
-public struct DiagnosticIssue: Sendable, Equatable {
+public struct DiagnosticIssue: Sendable, Equatable, Encodable {
     public let summary: String
     public let fieldPath: String?
     public let expectedType: String?
@@ -71,7 +71,7 @@ public struct DiagnosticIssue: Sendable, Equatable {
     }
 }
 
-public struct RequestRecord: Identifiable, Sendable, Equatable {
+public struct RequestRecord: Identifiable, Sendable, Equatable, Encodable {
     public let id: UUID
     public let startedAt: Date
     public internal(set) var finishedAt: Date?

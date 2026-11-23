@@ -94,6 +94,8 @@ Examples/TraceExample   Runnable iOS example project
 Documentation/          Design, learning, and validation notes (Chinese)
 ```
 
+Use the export button in the request list to save the current search and filter results as a JSON file. Select All and clear the search to export all retained requests. The file includes captured headers and bodies with the configured redaction rules applied. Review free text before sharing.
+
 ## Tests
 
 Run from the repository root:

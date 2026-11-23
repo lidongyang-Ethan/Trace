@@ -94,3 +94,5 @@
 "Request unavailable" = "Request unavailable";
 "This record was cleared or removed by the storage limit." = "This record was cleared or removed by the storage limit.";
 "Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved." = "Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved.";
+"Export filtered requests" = "Export filtered requests";
+"Export failed" = "Export failed";

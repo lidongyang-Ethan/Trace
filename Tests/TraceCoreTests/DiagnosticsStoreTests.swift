@@ -19,7 +19,17 @@ private let response = HTTPURLResponse(url: URL(string: "https://trace.invalid/t
     store.finish(id: id, response: response, data: Data(#"{"accessToken":"response-secret","id":42}"#.utf8), outcome: .success)
     let record = try #require(store.snapshot().records.first)
     let report = store.report(for: record)
+    store.begin(id: UUID())
+    let data = try RequestExport(records: [record]).jsonData()
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let records = try #require(json["records"] as? [[String: Any]])
+    #expect(records.count == 1)
+    #expect(records.first?["id"] as? String == id.uuidString)
+    #expect(json["schemaVersion"] as? Int == 1)
+    let exported = String(decoding: data, as: UTF8.self)
+    #expect(exported.contains("Visible"))
     for secret in ["username", "pass@", "query-secret", "auth-secret", "cookie-secret", "private-cookie", "request-secret", "personal@test.invalid", "response-secret", "#private"] {
+        #expect(!exported.contains(secret))
         #expect(!report.contains(secret), "Leaked: \(secret)")
     }
     #expect(report.contains("Visible"))
