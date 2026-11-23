@@ -104,6 +104,8 @@ swift test
 
 Tests use a custom `URLProtocol` to provide deterministic responses without external APIs. Coverage includes sensitive-data redaction, body omission, pause and clear, capacity limits, concurrency, HTTP and decoding errors, cancellation, timeouts, retries, localized resources, and language fallback.
 
+GitHub Actions runs the package tests and builds the Debug example for a specific iPhone simulator on pull requests, pushes to main, and numeric version tags. Before publishing a release, check that **Trace CI** passed for the tagged commit.
+
 ## Current limitations
 
 - Only ordinary Alamofire `DataRequest` requests are supported. Uploads, downloads, and streaming requests are not recorded.
@@ -116,7 +118,7 @@ Tests use a custom `URLProtocol` to provide deterministic responses without exte
 - Changing settings clears existing records. Value-type snapshots already obtained by callers cannot be retroactively revoked.
 - The body budget is not a process-wide memory limit. Alamofire still retains its request data. There is no event-queue backpressure mechanism, and extreme-concurrency performance has not been validated.
 - The list polls snapshots every 250 ms to avoid refreshing the UI for every callback. Coalesced notifications may replace this after performance measurements.
-- The project does not yet include a final app icon, store materials, or CI. It is a developer toolkit and example, not an app submitted to the App Store.
+- The project does not yet include a final app icon or store materials. It is a developer toolkit and example, not an app submitted to the App Store.
 
 ## Next steps
 

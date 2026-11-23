@@ -1,0 +1,33 @@
+name: Trace CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['[0-9]*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Package tests and iPhone Debug build
+    runs-on: xcode-27
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show toolchain
+        run: |
+          xcodebuild -version
+          swift --version
+      - name: Run package tests
+        run: swift test --disable-automatic-resolution
+      - name: Build TraceExample for an available iPhone
+        run: |
+          devices=$(xcrun simctl list devices available --json)
+          device_id=$(jq -er '[.devices | to_entries[] | select(.key | contains(".iOS-")) | .value[] | select(.isAvailable and (.name | startswith("iPhone")))] | first.udid // error("No available iPhone simulator")' <<< "$devices")
+          xcodebuild -project Examples/TraceExample/TraceExample.xcodeproj \
+            -scheme TraceExample -configuration Debug \
+            -destination "platform=iOS Simulator,id=$device_id" \
+            -disableAutomaticPackageResolution build
