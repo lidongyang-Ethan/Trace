@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-An iOS network diagnostics panel built on Alamofire's `EventMonitor`. A **0.1.0 development preview** distributed through Swift Package Manager. Swift Package Index listing is subject to its review process.
+An iOS network diagnostics panel built on Alamofire's `EventMonitor`. A **0.1.1 development preview** distributed through Swift Package Manager. Swift Package Index listing is subject to its review process.
 
 ## Features
 
@@ -47,12 +47,12 @@ In Xcode, choose **File → Add Package Dependencies…** and enter:
 https://github.com/lidongyang-Ethan/Trace.git
 ```
 
-Select version **0.1.0** or later within the 0.1 series, then add the `TraceAlamofire` and `TraceUI` products. Your app also needs a direct dependency on Alamofire.
+Select version **0.1.1** or later within the 0.1 series, then add the `TraceAlamofire` and `TraceUI` products. Your app also needs a direct dependency on Alamofire.
 
 For a `Package.swift` manifest:
 
 ```swift
-.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.0"))
+.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.1"))
 ```
 
 To work with a local checkout, use Xcode's **Add Local…** and select the repository root.
@@ -112,10 +112,11 @@ Tests use a custom `URLProtocol` to provide deterministic responses without exte
 - Total duration includes queueing, retries, and observed serialization processing. DNS, TLS, and TTFB metrics are not displayed yet.
 - Only parseable JSON that can be redacted by field is retained. Non-JSON, malformed JSON, and oversized bodies are omitted; raw content is not truncated and presented as safely redacted data.
 - Authentication and Cookie headers, plus `password`, `token`, `accessToken`, `refreshToken`, `email`, `apiKey`, `secret`, and `signature` fields, are redacted by default, case-insensitively. Additional fields can be configured. Personal information in free text and URL paths cannot be guaranteed to be redacted automatically.
+- Detail and report views refresh every 250 ms and stop displaying records removed by clearing, settings changes, or capacity limits. Reports already handed to the system share sheet cannot be revoked.
 - Changing settings clears existing records. Value-type snapshots already obtained by callers cannot be retroactively revoked.
 - The body budget is not a process-wide memory limit. Alamofire still retains its request data. There is no event-queue backpressure mechanism, and extreme-concurrency performance has not been validated.
 - The list polls snapshots every 250 ms to avoid refreshing the UI for every callback. Coalesced notifications may replace this after performance measurements.
-- The project does not yet include a final app icon, store materials, CI, or version tags. It is a developer toolkit and example, not an app submitted to the App Store.
+- The project does not yet include a final app icon, store materials, or CI. It is a developer toolkit and example, not an app submitted to the App Store.
 
 ## Next steps
 

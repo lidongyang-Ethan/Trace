@@ -6,18 +6,20 @@ public final class DiagnosticsStore: @unchecked Sendable {
     private var configuration: DiagnosticsConfiguration
     private var records: [RequestRecord] = []
     private var paused = false
-    public init(configuration: DiagnosticsConfiguration = .init()) { self.configuration = configuration }
+    public init(configuration: DiagnosticsConfiguration = .init()) { self.configuration = configuration.normalized }
 
     public func snapshot() -> DiagnosticsSnapshot {
         locked { .init(records: records, isPaused: paused, configuration: configuration) }
+    }
+    /// Returns only a currently retained record; removed records do not fall back to old snapshots.
+    public func record(id: UUID) -> RequestRecord? {
+        locked { records.first { $0.id == id } }
     }
     public func setPaused(_ value: Bool) { locked { paused = value } }
     public func clear() { locked { records.removeAll(keepingCapacity: true) } }
     public func updateConfiguration(_ value: DiagnosticsConfiguration) {
         locked {
-            configuration = .init(maximumRecords: value.maximumRecords, maximumBodyBytes: value.maximumBodyBytes,
-                                  maximumTotalBodyBytes: value.maximumTotalBodyBytes, capturesBodies: value.capturesBodies,
-                                  sensitiveKeys: value.sensitiveKeys)
+            configuration = value.normalized
             // A rule change invalidates existing snapshots in the store; never re-use less-redacted records.
             records.removeAll(keepingCapacity: true)
         }

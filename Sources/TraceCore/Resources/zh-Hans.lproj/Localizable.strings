@@ -91,3 +91,6 @@
 "Waiting for request URL" = "等待请求地址";
 "Waiting for the request to finish" = "正在等待请求完成";
 "[REDACTED]" = "[已隐藏]";
+"Request unavailable" = "请求记录不可用";
+"This record was cleared or removed by the storage limit." = "该记录已被清空或因容量限制被移除。";
+"Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved." = "单条正文最多 %@，总预算 %@。非 JSON 和超大正文不保存。";

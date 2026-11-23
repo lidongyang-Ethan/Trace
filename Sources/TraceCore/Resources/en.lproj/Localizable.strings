@@ -91,3 +91,6 @@
 "Waiting for request URL" = "Waiting for request URL";
 "Waiting for the request to finish" = "Waiting for the request to finish";
 "[REDACTED]" = "[REDACTED]";
+"Request unavailable" = "Request unavailable";
+"This record was cleared or removed by the storage limit." = "This record was cleared or removed by the storage limit.";
+"Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved." = "Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved.";

@@ -27,6 +27,7 @@ public struct NetworkDiagnosticsView: View {
     @State private var query = ""
     @State private var filter: RequestFilter = .all
     @State private var showsSettings = false
+    @State private var confirmsClear = false
     public init(store: DiagnosticsStore) { _model = StateObject(wrappedValue: PanelModel(store: store)) }
 
     private enum RequestFilter: String, CaseIterable { case all = "All", failures = "Failures", slow = "Slow" }
@@ -71,8 +72,16 @@ public struct NetworkDiagnosticsView: View {
                         model.store.setPaused(!model.isPaused); model.refresh()
                     } label: { Image(systemName: model.isPaused ? "play.fill" : "pause.fill") }
                         .accessibilityLabel(model.isPaused ? TraceLocalization.text("Resume recording") : TraceLocalization.text("Pause recording"))
+                    Button { confirmsClear = true } label: { Image(systemName: "trash") }
+                        .disabled(model.records.isEmpty)
+                        .accessibilityLabel(TraceLocalization.text("Clear all records"))
                     Button { showsSettings = true } label: { Image(systemName: "slider.horizontal.3") }
                         .accessibilityLabel(TraceLocalization.text("Recording settings"))
+                }
+            }
+            .confirmationDialog(TraceLocalization.text("Clear all records from this session?"), isPresented: $confirmsClear, titleVisibility: .visible) {
+                Button(TraceLocalization.text("Clear"), role: .destructive) {
+                    model.store.clear(); model.refresh()
                 }
             }
             .sheet(isPresented: $showsSettings) { SettingsView(store: model.store) }
@@ -104,13 +113,37 @@ private struct RequestRow: View {
 
 @MainActor
 private struct RequestDetailView: View {
-    let record: RequestRecord
+    let recordID: UUID
     let store: DiagnosticsStore
     @State private var current: RequestRecord?
+
+    init(record: RequestRecord, store: DiagnosticsStore) {
+        recordID = record.id
+        self.store = store
+        _current = State(initialValue: store.record(id: record.id))
+    }
     @State private var tab = 0
     @State private var showsReport = false
-    private var displayed: RequestRecord { current ?? record }
     var body: some View {
+        Group {
+            if let displayed = current {
+                detail(displayed)
+            } else {
+                RemovedRecordView()
+            }
+        }
+        .navigationTitle(current?.path ?? TraceLocalization.text("Request unavailable"))
+        .sheet(isPresented: $showsReport) { ReportView(recordID: recordID, store: store) }
+        .onAppear { tab = current?.outcome.isFailure == true ? 2 : 1 }
+        .task {
+            while !Task.isCancelled {
+                current = store.record(id: recordID)
+                if current == nil { showsReport = false }
+                do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+            }
+        }
+    }
+    private func detail(_ displayed: RequestRecord) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 Text(displayed.url).font(.caption.monospaced()).textSelection(.enabled)
@@ -150,15 +183,6 @@ private struct RequestDetailView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }.padding()
         }
-        .navigationTitle(displayed.path)
-        .sheet(isPresented: $showsReport) { ReportView(report: store.report(for: displayed)) }
-        .onAppear { tab = displayed.outcome.isFailure ? 2 : 1 }
-        .task {
-            while !Task.isCancelled {
-                current = store.snapshot().records.first { $0.id == record.id }
-                do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
-            }
-        }
     }
     private func summary(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {
@@ -196,15 +220,23 @@ private struct SettingsView: View {
     @State private var capturesBodies = true
     @State private var maximumRecords = 200
     @State private var confirmsClear = false
+    private var bodyBudgetDescription: String {
+        let config = store.snapshot().configuration
+        return TraceLocalization.format(
+            "Up to %@ per body; %@ total. Non-JSON and oversized bodies are not saved.",
+            ByteCountFormatter.string(fromByteCount: Int64(config.maximumBodyBytes), countStyle: .binary),
+            ByteCountFormatter.string(fromByteCount: Int64(config.maximumTotalBodyBytes), countStyle: .binary)
+        )
+    }
     var body: some View {
         NavigationStack {
             Form {
                 Section(TraceLocalization.text("Capture")) {
                     Toggle(TraceLocalization.text("Capture JSON bodies"), isOn: $capturesBodies)
                     Picker(TraceLocalization.text("Record limit"), selection: $maximumRecords) {
-                        ForEach([100, 200, 500], id: \.self) { Text(TraceLocalization.format("%@ requests", String(describing: $0))).tag($0) }
+                        ForEach(Array(Set([100, 200, 500, maximumRecords])).sorted(), id: \.self) { Text(TraceLocalization.format("%@ requests", String(describing: $0))).tag($0) }
                     }
-                    Text(TraceLocalization.text("Up to 64 KiB per body, with an 8 MiB total budget. Non-JSON and oversized bodies are not saved."))
+                    Text(bodyBudgetDescription)
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Section(TraceLocalization.text("Privacy")) {
@@ -237,20 +269,53 @@ private struct SettingsView: View {
 
 @MainActor
 private struct ReportView: View {
-    let report: String
+    let recordID: UUID
+    let store: DiagnosticsStore
+    @State private var report: String?
+
+    init(recordID: UUID, store: DiagnosticsStore) {
+        self.recordID = recordID
+        self.store = store
+        _report = State(initialValue: store.record(id: recordID).map { store.report(for: $0) })
+    }
     @Environment(\.dismiss) private var dismiss
     var body: some View {
         NavigationStack {
-            ScrollView {
-                Text(report).font(.caption.monospaced()).textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading).padding()
+            Group {
+                if let report {
+                    ScrollView {
+                        Text(report).font(.caption.monospaced()).textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading).padding()
+                    }
+                } else {
+                    RemovedRecordView()
+                }
             }
             .navigationTitle(TraceLocalization.text("Redacted report preview"))
             .toolbar {
                 ToolbarItem { Button(TraceLocalization.text("Done")) { dismiss() } }
-                ToolbarItem { ShareLink(item: report) { Label(TraceLocalization.text("Share report"), systemImage: "square.and.arrow.up") } }
+                ToolbarItem { if let report { ShareLink(item: report) { Label(TraceLocalization.text("Share report"), systemImage: "square.and.arrow.up") } } }
             }
         }
+        .task {
+            while !Task.isCancelled {
+                report = store.record(id: recordID).map { store.report(for: $0) }
+                do { try await Task.sleep(for: .milliseconds(250)) } catch { return }
+            }
+        }
+    }
+}
+
+private struct RemovedRecordView: View {
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "trash").font(.largeTitle)
+            Text(TraceLocalization.text("Request unavailable")).font(.headline)
+            Text(TraceLocalization.text("This record was cleared or removed by the storage limit."))
+                .font(.caption).multilineTextAlignment(.center)
+        }
+        .foregroundStyle(.secondary)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding()
     }
 }
 

@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-一个基于 Alamofire `EventMonitor` 的 iOS 网络诊断面板。当前为 **0.1.0 开发预览版**，通过 Swift Package Manager 分发。Swift Package Index 收录需等待其审核。
+一个基于 Alamofire `EventMonitor` 的 iOS 网络诊断面板。当前为 **0.1.1 开发预览版**，通过 Swift Package Manager 分发。Swift Package Index 收录需等待其审核。
 
 ## 现在可以做什么
 
@@ -47,12 +47,12 @@ Release 示例不创建诊断对象和界面。真机运行需要在 Signing & C
 https://github.com/lidongyang-Ethan/Trace.git
 ```
 
-选择 **0.1.0** 或 0.1 系列的后续版本，添加 `TraceAlamofire` 与 `TraceUI` 产品。宿主项目也需要直接依赖 Alamofire。
+选择 **0.1.1** 或 0.1 系列的后续版本，添加 `TraceAlamofire` 与 `TraceUI` 产品。宿主项目也需要直接依赖 Alamofire。
 
 使用 `Package.swift` 时添加：
 
 ```swift
-.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.0"))
+.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.1"))
 ```
 
 本地开发仍可通过 Xcode 的 **Add Local…** 添加本仓库根目录。
@@ -110,10 +110,11 @@ swift test
 - 当前总耗时包含排队、重试与观察到的解析处理时间；尚未展示 DNS / TLS / TTFB 指标。
 - 只保存可解析、可按字段脱敏的 JSON。非 JSON、损坏 JSON、超限正文均省略，不截取原始内容冒充安全结果。
 - 默认隐藏认证 / Cookie 头和 password、token、accessToken、refreshToken、email、apiKey、secret、signature 字段（不区分大小写）。可通过配置增加字段；自由文本和 URL 路径中的个人信息无法自动保证脱敏。
+- 详情和报告预览每 250ms 刷新；清空、设置变更或容量淘汰后，不再回退显示旧记录。已交给系统分享界面的报告无法撤回。
 - 设置改变会清空已有记录。外部调用方已取得的值类型快照不能被追溯撤回。
 - 正文预算不等于整个进程内存上限。Alamofire 仍会持有其请求数据；当前没有事件队列背压机制，未做极端并发性能验收。
 - 列表每 250ms 拉取一次快照，避免每个回调都刷新 UI；后续可根据性能测量改为合并通知。
-- 工程尚无正式 App 图标、商店材料、CI 和版本标签；这是开发工具包与示例，不是已提交商店的产品。
+- 工程尚无正式 App 图标、商店材料和 CI；这是开发工具包与示例，不是已提交商店的产品。
 
 ## 下一步
 

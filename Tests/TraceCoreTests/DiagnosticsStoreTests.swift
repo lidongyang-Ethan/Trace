@@ -121,3 +121,40 @@ private let response = HTTPURLResponse(url: URL(string: "https://trace.invalid/t
     store.finish(id: id, response: response, data: Data("{}".utf8), outcome: .success)
     #expect(try #require(store.snapshot().records.first).responseBody.state == .disabled)
 }
+
+@Test func mutatedConfigurationIsNormalizedOnInitialization() {
+    var config = DiagnosticsConfiguration()
+    config.maximumRecords = -10
+    config.maximumBodyBytes = -1
+    config.maximumTotalBodyBytes = -1
+    config.sensitiveKeys = ["CUSTOM"]
+    let store = DiagnosticsStore(configuration: config)
+    for _ in 0..<3 { store.begin(id: UUID()) }
+    let snapshot = store.snapshot()
+    #expect(snapshot.records.count == 1)
+    #expect(snapshot.configuration.maximumRecords == 1)
+    #expect(snapshot.configuration.maximumBodyBytes == 0)
+    #expect(snapshot.configuration.maximumTotalBodyBytes == 0)
+    #expect(snapshot.configuration.sensitiveKeys == ["custom"])
+    store.updateConfiguration(config)
+    #expect(store.snapshot().configuration.maximumRecords == 1)
+    #expect(store.snapshot().records.isEmpty)
+}
+
+@Test func lookupReflectsCompletionEvictionClearAndConfigurationChanges() throws {
+    let store = DiagnosticsStore(configuration: .init(maximumRecords: 1))
+    let first = UUID(), second = UUID()
+    #expect(store.record(id: first) == nil)
+    store.begin(id: first)
+    store.finish(id: first, response: response, data: Data("{}".utf8), outcome: .success)
+    #expect(store.record(id: first)?.outcome == .success)
+    store.begin(id: second)
+    #expect(store.record(id: first) == nil)
+    #expect(store.record(id: second) != nil)
+    store.clear()
+    store.finish(id: second, response: response, data: nil, outcome: .success)
+    #expect(store.record(id: second) == nil)
+    store.begin(id: first)
+    store.updateConfiguration(.init(capturesBodies: false))
+    #expect(store.record(id: first) == nil)
+}

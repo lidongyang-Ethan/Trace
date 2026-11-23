@@ -18,6 +18,14 @@ public struct DiagnosticsConfiguration: Sendable {
     }
 }
 
+extension DiagnosticsConfiguration {
+    var normalized: Self {
+        .init(maximumRecords: maximumRecords, maximumBodyBytes: maximumBodyBytes,
+              maximumTotalBodyBytes: maximumTotalBodyBytes, capturesBodies: capturesBodies,
+              sensitiveKeys: sensitiveKeys)
+    }
+}
+
 public enum RequestOutcome: String, Sendable, Codable {
     case running, success, httpError, decodingError, networkError, cancelled
     public var title: String {
