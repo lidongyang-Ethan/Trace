@@ -192,6 +192,7 @@ private struct RequestDetailView: View {
                     headers(displayed.responseHeaders)
                     bodyBlock(TraceLocalization.text("Response body"), displayed.responseBody)
                 } else {
+                    timingSection(displayed.timing)
                     if let issue = displayed.issue {
                         Text(issue.summary).font(.headline)
                         if let path = issue.fieldPath { LabeledContent(TraceLocalization.text("Field path"), value: path) }
@@ -210,6 +211,27 @@ private struct RequestDetailView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }.padding()
         }
+    }
+    private func timingSection(_ timing: NetworkTiming?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(TraceLocalization.text("Network timing · last transaction")).font(.headline)
+            if let timing {
+                if timing.reusedConnection { Text(TraceLocalization.text("Reused connection")) }
+                phase("DNS", timing.dns)
+                phase("Connection (includes TLS)", timing.connection)
+                phase("TLS", timing.tls)
+                phase("Wait for first byte", timing.waitForFirstByte)
+                phase("Response download", timing.download)
+            } else {
+                Text(TraceLocalization.text("Not provided")).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func phase(_ title: String, _ seconds: TimeInterval?) -> some View {
+        LabeledContent(TraceLocalization.text(title), value: seconds.map {
+            String(format: "%.0f ms", $0 * 1_000)
+        } ?? TraceLocalization.text("Not provided"))
     }
     private func summary(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {

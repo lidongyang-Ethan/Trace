@@ -9,12 +9,13 @@ private let response = HTTPURLResponse(url: URL(string: "https://trace.invalid/t
     let store = DiagnosticsStore()
     let id = UUID()
     store.begin(id: id)
-    var request = URLRequest(url: URL(string: "https://username:pass@trace.invalid/login?token=query-secret&page=1#private")!)
+    var request = URLRequest(url: URL(string: "https://username:pass@trace.invalid/login?token=query-secret&page=1&access_token=alias-query-secret#private")!)
+    request.setValue("alias-header-secret", forHTTPHeaderField: "X-API-Key")
     request.httpMethod = "POST"
     request.setValue("Bearer auth-secret", forHTTPHeaderField: "Authorization")
     request.setValue("cookie-secret", forHTTPHeaderField: "Cookie")
     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-    request.httpBody = Data(#"{"password":"request-secret","nested":[{"email":"personal@test.invalid"}],"name":"Visible"}"#.utf8)
+    request.httpBody = Data(#"{"password":"request-secret","nested":[{"refresh_token":"alias-body-secret","email":"personal@test.invalid"}],"name":"Visible"}"#.utf8)
     store.captureRequest(id: id, request: request)
     store.finish(id: id, response: response, data: Data(#"{"accessToken":"response-secret","id":42}"#.utf8), outcome: .success)
     let record = try #require(store.snapshot().records.first)
@@ -28,7 +29,7 @@ private let response = HTTPURLResponse(url: URL(string: "https://trace.invalid/t
     #expect(json["schemaVersion"] as? Int == 1)
     let exported = String(decoding: data, as: UTF8.self)
     #expect(exported.contains("Visible"))
-    for secret in ["username", "pass@", "query-secret", "auth-secret", "cookie-secret", "private-cookie", "request-secret", "personal@test.invalid", "response-secret", "#private"] {
+    for secret in ["alias-query-secret", "alias-header-secret", "alias-body-secret", "username", "pass@", "query-secret", "auth-secret", "cookie-secret", "private-cookie", "request-secret", "personal@test.invalid", "response-secret", "#private"] {
         #expect(!exported.contains(secret))
         #expect(!report.contains(secret), "Leaked: \(secret)")
     }

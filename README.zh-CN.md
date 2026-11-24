@@ -111,9 +111,9 @@ swift test
 - 仅支持普通 Alamofire DataRequest；上传、下载、流式请求暂不记录。
 - HTTP 错误指 Alamofire 配置的校验失败。未调用 `.validate()` 的 4xx 响应不一定是客户端处理失败。
 - 多个响应解析器共用一条记录：记录任意已观察到的失败。重试开始后清除上次结果，最后一次尝试决定新结果；暂不保留逐次尝试明细。
-- 当前总耗时包含排队、重试与观察到的解析处理时间；尚未展示 DNS / TLS / TTFB 指标。
+- 当前总耗时包含排队、重试与观察到的解析处理时间；诊断页显示当前尝试最后一次事务的 DNS、连接（含 TLS）、TLS、请求发送完成至首字节及下载耗时。系统未提供的指标标记为「未提供」，JSON 中的耗时单位为秒。
 - 只保存可解析、可按字段脱敏的 JSON。非 JSON、损坏 JSON、超限正文均省略，不截取原始内容冒充安全结果。
-- 默认隐藏认证 / Cookie 头和 password、token、accessToken、refreshToken、email、apiKey、secret、signature 字段（不区分大小写）。可通过配置增加字段；自由文本和 URL 路径中的个人信息无法自动保证脱敏。
+- 默认隐藏认证 / Cookie 头和 password、token、accessToken、refreshToken、access_token、refresh_token、X-API-Key、email、apiKey、secret、signature 字段（不区分大小写）。可通过配置增加字段；自由文本和 URL 路径中的个人信息无法自动保证脱敏。
 - 详情和报告预览每 250ms 刷新；清空、设置变更或容量淘汰后，不再回退显示旧记录。已交给系统分享界面的报告无法撤回。
 - 设置改变会清空已有记录。外部调用方已取得的值类型快照不能被追溯撤回。
 - 正文预算不等于整个进程内存上限。Alamofire 仍会持有其请求数据；当前没有事件队列背压机制，未做极端并发性能验收。
