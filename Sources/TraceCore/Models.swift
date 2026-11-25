@@ -9,7 +9,7 @@ public struct DiagnosticsConfiguration: Sendable {
 
     public init(maximumRecords: Int = 200, maximumBodyBytes: Int = 65_536,
                 maximumTotalBodyBytes: Int = 8 * 1_024 * 1_024, capturesBodies: Bool = true,
-                sensitiveKeys: Set<String> = ["password", "token", "accessToken", "refreshToken", "email", "apiKey", "secret", "signature"]) {
+                sensitiveKeys: Set<String> = ["password", "token", "accessToken", "refreshToken", "access_token", "refresh_token", "x-api-key", "email", "apiKey", "secret", "signature"]) {
         self.maximumRecords = max(1, maximumRecords)
         self.maximumBodyBytes = max(0, maximumBodyBytes)
         self.maximumTotalBodyBytes = max(0, maximumTotalBodyBytes)
@@ -41,8 +41,8 @@ public enum RequestOutcome: String, Sendable, Codable {
     public var isFailure: Bool { [.httpError, .decodingError, .networkError].contains(self) }
 }
 
-public struct CapturedBody: Sendable, Equatable {
-    public enum State: String, Sendable { case json, absent, disabled, omitted, evicted }
+public struct CapturedBody: Sendable, Equatable, Encodable {
+    public enum State: String, Sendable, Encodable { case json, absent, disabled, omitted, evicted }
     public let state: State
     public let text: String?
     public let originalByteCount: Int?
@@ -62,7 +62,7 @@ public struct CapturedBody: Sendable, Equatable {
     }
 }
 
-public struct DiagnosticIssue: Sendable, Equatable {
+public struct DiagnosticIssue: Sendable, Equatable, Encodable {
     public let summary: String
     public let fieldPath: String?
     public let expectedType: String?
@@ -71,7 +71,7 @@ public struct DiagnosticIssue: Sendable, Equatable {
     }
 }
 
-public struct RequestRecord: Identifiable, Sendable, Equatable {
+public struct RequestRecord: Identifiable, Sendable, Equatable, Encodable {
     public let id: UUID
     public let startedAt: Date
     public internal(set) var finishedAt: Date?
@@ -85,6 +85,7 @@ public struct RequestRecord: Identifiable, Sendable, Equatable {
     public internal(set) var outcome: RequestOutcome = .running
     public internal(set) var issue: DiagnosticIssue?
     public internal(set) var attempts: Int = 0
+    public internal(set) var timing: NetworkTiming?
     public var duration: TimeInterval? { finishedAt.map { max(0, $0.timeIntervalSince(startedAt)) } }
     public var path: String { URLComponents(string: url)?.path.nonEmpty ?? url }
     public var host: String { URLComponents(string: url)?.host ?? "—" }

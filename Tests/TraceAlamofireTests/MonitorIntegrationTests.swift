@@ -137,3 +137,23 @@ private final class RecoverOnce: RequestInterceptor, @unchecked Sendable {
     #expect(record.outcome == .success)
     #expect(record.issue == nil)
 }
+
+// Opt in locally with TRACE_LIVE_HTTPS=1 swift test. Regular CI uses local fixtures.
+@Test(.enabled(if: ProcessInfo.processInfo.environment["TRACE_LIVE_HTTPS"] == "1"))
+func liveHTTPSRequestExportsNetworkTiming() async throws {
+    let diagnostics = NetworkDiagnostics()
+    let session = Session(configuration: .ephemeral, eventMonitors: [diagnostics.monitor])
+    let result = await session.request("https://example.com/").validate().serializingData().response
+    _ = try result.result.get()
+    await settle(diagnostics)
+    let record = try #require(diagnostics.store.snapshot().records.first)
+    let timing = try #require(record.timing)
+    #expect(timing.waitForFirstByte != nil)
+    #expect(timing.download != nil)
+    let data = try RequestExport(records: [record]).jsonData()
+    let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    let rows = try #require(json["records"] as? [[String: Any]])
+    #expect(rows.first?["timing"] is [String: Any])
+    diagnostics.store.markRetrying(id: record.id)
+    #expect(diagnostics.store.record(id: record.id)?.timing == nil)
+}

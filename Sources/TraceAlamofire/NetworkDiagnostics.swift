@@ -39,6 +39,11 @@ public final class DiagnosticsEventMonitor: EventMonitor, @unchecked Sendable {
         guard isSupported(request), let urlRequest = task.originalRequest else { return }
         store.captureRequest(id: request.id, request: urlRequest)
     }
+    public func request(_ request: Request, didGatherMetrics metrics: URLSessionTaskMetrics) {
+        guard isSupported(request) else { return }
+        let timing = metrics.transactionMetrics.last.map(NetworkTiming.init(transaction:))
+        store.captureTiming(id: request.id, timing: timing)
+    }
     public func requestIsRetrying(_ request: Request) {
         guard isSupported(request) else { return }
         store.markRetrying(id: request.id)

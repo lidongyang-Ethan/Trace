@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import TraceCore
 
 @MainActor
@@ -28,6 +29,9 @@ public struct NetworkDiagnosticsView: View {
     @State private var filter: RequestFilter = .all
     @State private var showsSettings = false
     @State private var confirmsClear = false
+    @State private var exportDocument: ExportDocument?
+    @State private var showsExporter = false
+    @State private var exportError: String?
     public init(store: DiagnosticsStore) { _model = StateObject(wrappedValue: PanelModel(store: store)) }
 
     private enum RequestFilter: String, CaseIterable { case all = "All", failures = "Failures", slow = "Slow" }
@@ -72,6 +76,16 @@ public struct NetworkDiagnosticsView: View {
                         model.store.setPaused(!model.isPaused); model.refresh()
                     } label: { Image(systemName: model.isPaused ? "play.fill" : "pause.fill") }
                         .accessibilityLabel(model.isPaused ? TraceLocalization.text("Resume recording") : TraceLocalization.text("Pause recording"))
+                    Button {
+                        model.refresh()
+                        let records = filtered
+                        guard !records.isEmpty else { return }
+                        exportDocument = ExportDocument(records: records)
+                        showsExporter = true
+                    } label: {
+                        Label(TraceLocalization.text("Export filtered requests"), systemImage: "square.and.arrow.up")
+                    }
+                    .disabled(filtered.isEmpty)
                     Button { confirmsClear = true } label: { Image(systemName: "trash") }
                         .disabled(model.records.isEmpty)
                         .accessibilityLabel(TraceLocalization.text("Clear all records"))
@@ -86,6 +100,19 @@ public struct NetworkDiagnosticsView: View {
             }
             .sheet(isPresented: $showsSettings) { SettingsView(store: model.store) }
         }
+        .fileExporter(isPresented: $showsExporter, document: exportDocument, contentType: .json,
+                      defaultFilename: "Trace-requests") { result in
+            if case let .failure(error) = result, (error as NSError).code != NSUserCancelledError {
+                exportError = error.localizedDescription
+            }
+        }
+        .onChange(of: showsExporter) { presented in
+            if !presented { exportDocument = nil }
+        }
+        .alert(TraceLocalization.text("Export failed"), isPresented: Binding(
+            get: { exportError != nil }, set: { if !$0 { exportError = nil } }
+        )) { Button(TraceLocalization.text("Done")) { exportError = nil } }
+        message: { Text(exportError ?? "") }
         .task { await model.observe() }
     }
 }
@@ -165,6 +192,7 @@ private struct RequestDetailView: View {
                     headers(displayed.responseHeaders)
                     bodyBlock(TraceLocalization.text("Response body"), displayed.responseBody)
                 } else {
+                    timingSection(displayed.timing)
                     if let issue = displayed.issue {
                         Text(issue.summary).font(.headline)
                         if let path = issue.fieldPath { LabeledContent(TraceLocalization.text("Field path"), value: path) }
@@ -183,6 +211,27 @@ private struct RequestDetailView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }.padding()
         }
+    }
+    private func timingSection(_ timing: NetworkTiming?) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(TraceLocalization.text("Network timing · last transaction")).font(.headline)
+            if let timing {
+                if timing.reusedConnection { Text(TraceLocalization.text("Reused connection")) }
+                phase("DNS", timing.dns)
+                phase("Connection (includes TLS)", timing.connection)
+                phase("TLS", timing.tls)
+                phase("Wait for first byte", timing.waitForFirstByte)
+                phase("Response download", timing.download)
+            } else {
+                Text(TraceLocalization.text("Not provided")).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func phase(_ title: String, _ seconds: TimeInterval?) -> some View {
+        LabeledContent(TraceLocalization.text(title), value: seconds.map {
+            String(format: "%.0f ms", $0 * 1_000)
+        } ?? TraceLocalization.text("Not provided"))
     }
     private func summary(_ title: String, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 5) {

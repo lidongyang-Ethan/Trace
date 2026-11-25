@@ -31,9 +31,16 @@ public final class DiagnosticsStore: @unchecked Sendable {
             if records.count > configuration.maximumRecords { records.removeLast(records.count - configuration.maximumRecords) }
         }
     }
+    public func captureTiming(id: UUID, timing: NetworkTiming?) {
+        locked {
+            guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+            records[index].timing = timing
+        }
+    }
     public func markRetrying(id: UUID) {
         locked {
             guard let index = records.firstIndex(where: { $0.id == id }) else { return }
+            records[index].timing = nil
             records[index].outcome = .running
             records[index].issue = nil
             records[index].finishedAt = nil

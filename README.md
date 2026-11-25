@@ -94,6 +94,8 @@ Examples/TraceExample   Runnable iOS example project
 Documentation/          Design, learning, and validation notes (Chinese)
 ```
 
+Use the export button in the request list to save the current search and filter results as a JSON file. Select All and clear the search to export all retained requests. The file includes captured headers and bodies with the configured redaction rules applied. Review free text before sharing.
+
 ## Tests
 
 Run from the repository root:
@@ -111,9 +113,9 @@ GitHub Actions runs the package tests and builds the Debug example for a specifi
 - Only ordinary Alamofire `DataRequest` requests are supported. Uploads, downloads, and streaming requests are not recorded.
 - HTTP errors refer to failures of the validation configured in Alamofire. A 4xx response without `.validate()` does not necessarily count as a client processing failure.
 - Multiple response serializers share one record, which retains any observed failure. Starting a retry clears the previous outcome, and the final attempt determines the new outcome. Per-attempt details are not retained yet.
-- Total duration includes queueing, retries, and observed serialization processing. DNS, TLS, and TTFB metrics are not displayed yet.
+- Total duration includes queueing, retries, and observed serialization processing. The Diagnostics tab shows DNS, connection (including TLS), TLS, wait from request end to first byte, and download times for the last transaction of the current attempt when URLSession supplies them. JSON timing values are in seconds.
 - Only parseable JSON that can be redacted by field is retained. Non-JSON, malformed JSON, and oversized bodies are omitted; raw content is not truncated and presented as safely redacted data.
-- Authentication and Cookie headers, plus `password`, `token`, `accessToken`, `refreshToken`, `email`, `apiKey`, `secret`, and `signature` fields, are redacted by default, case-insensitively. Additional fields can be configured. Personal information in free text and URL paths cannot be guaranteed to be redacted automatically.
+- Authentication and Cookie headers, plus `password`, `token`, `accessToken`, `refreshToken`, `access_token`, `refresh_token`, `X-API-Key`, `email`, `apiKey`, `secret`, and `signature` fields, are redacted by default, case-insensitively. Additional fields can be configured. Personal information in free text and URL paths cannot be guaranteed to be redacted automatically.
 - Detail and report views refresh every 250 ms and stop displaying records removed by clearing, settings changes, or capacity limits. Reports already handed to the system share sheet cannot be revoked.
 - Changing settings clears existing records. Value-type snapshots already obtained by callers cannot be retroactively revoked.
 - The body budget is not a process-wide memory limit. Alamofire still retains its request data. There is no event-queue backpressure mechanism, and extreme-concurrency performance has not been validated.
