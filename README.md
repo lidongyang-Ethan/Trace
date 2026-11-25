@@ -2,7 +2,7 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
-An iOS network diagnostics panel built on Alamofire's `EventMonitor`. A **0.1.1 development preview** distributed through Swift Package Manager. Swift Package Index listing is subject to its review process.
+An iOS network diagnostics panel built on Alamofire's `EventMonitor`. A **0.2.0 development preview** distributed through Swift Package Manager. Swift Package Index listing is subject to its review process.
 
 ## Features
 
@@ -47,12 +47,12 @@ In Xcode, choose **File → Add Package Dependencies…** and enter:
 https://github.com/lidongyang-Ethan/Trace.git
 ```
 
-Select version **0.1.1** or later within the 0.1 series, then add the `TraceAlamofire` and `TraceUI` products. Your app also needs a direct dependency on Alamofire.
+Select version **0.2.0** or later within the 0.2 series, then add the `TraceAlamofire` and `TraceUI` products. Your app also needs a direct dependency on Alamofire.
 
 For a `Package.swift` manifest:
 
 ```swift
-.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.1"))
+.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.2.0"))
 ```
 
 To work with a local checkout, use Xcode's **Add Local…** and select the repository root.

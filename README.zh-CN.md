@@ -2,7 +2,7 @@
 
 [English](README.md) | **简体中文**
 
-一个基于 Alamofire `EventMonitor` 的 iOS 网络诊断面板。当前为 **0.1.1 开发预览版**，通过 Swift Package Manager 分发。Swift Package Index 收录需等待其审核。
+一个基于 Alamofire `EventMonitor` 的 iOS 网络诊断面板。当前为 **0.2.0 开发预览版**，通过 Swift Package Manager 分发。Swift Package Index 收录需等待其审核。
 
 ## 现在可以做什么
 
@@ -47,12 +47,12 @@ Release 示例不创建诊断对象和界面。真机运行需要在 Signing & C
 https://github.com/lidongyang-Ethan/Trace.git
 ```
 
-选择 **0.1.1** 或 0.1 系列的后续版本，添加 `TraceAlamofire` 与 `TraceUI` 产品。宿主项目也需要直接依赖 Alamofire。
+选择 **0.2.0** 或 0.2 系列的后续版本，添加 `TraceAlamofire` 与 `TraceUI` 产品。宿主项目也需要直接依赖 Alamofire。
 
 使用 `Package.swift` 时添加：
 
 ```swift
-.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.1.1"))
+.package(url: "https://github.com/lidongyang-Ethan/Trace.git", .upToNextMinor(from: "0.2.0"))
 ```
 
 本地开发仍可通过 Xcode 的 **Add Local…** 添加本仓库根目录。
